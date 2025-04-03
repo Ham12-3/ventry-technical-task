@@ -279,3 +279,28 @@ For deployment to Vercel:
 - Then `alembic upgrade head`
 
 
+
+
+
+
+## Video Demo
+
+Check out our authentication system in action:
+
+<div align="center">
+  <a href="https://www.youtube.com/watch?v=aVdDYuHxjN8">
+    <img src="https://img.youtube.com/vi/aVdDYuHxjN8/maxresdefault.jpg" alt="Ventry Authentication System Demo" style="width:80%;">
+  </a>
+</div>
+
+
+
+*Click the image above to watch the demo video on YouTube*
+
+The video demonstrates:
+- Complete user registration flow
+- Email and password authentication
+- Google OAuth integration
+- Exclusive access code functionality
+- Protected route navigation
+- Responsive UI design
