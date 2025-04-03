@@ -140,3 +140,7 @@
     @apply bg-background text-foreground;
   }
 }
+
+.input-gold {
+  @apply bg-gradient-to-r from-[#D9B846] via-[#E9D076] to-[#D9B846] border-white/20 text-gray-800 placeholder-gray-600 focus:border-white focus-visible:ring-white/30;
+}

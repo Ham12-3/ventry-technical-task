@@ -1,6 +1,8 @@
 import os
 from pathlib import Path
 from dotenv import load_dotenv
+from pydantic import BaseModel
+from datetime import datetime
 
 # Get the path to the .env file in the parent directory (backend folder)
 env_path = Path(__file__).parent.parent / '.env'
@@ -53,3 +55,17 @@ SMTP_USER = os.getenv("SMTP_USER")
 SMTP_PASSWORD = os.getenv("SMTP_PASSWORD")
 EMAIL_FROM = os.getenv("EMAIL_FROM")
 EMAIL_FROM_NAME = os.getenv("EMAIL_FROM_NAME", "Ventry App")
+
+class UserResponse(BaseModel):
+    id: str
+    email: str
+    name: str
+    is_active: bool
+    is_verified: bool
+    created_at: datetime
+    provider: str
+    exclusive_access: bool
+    
+    model_config = {
+        "from_attributes": True  # The newer way to set this
+    }

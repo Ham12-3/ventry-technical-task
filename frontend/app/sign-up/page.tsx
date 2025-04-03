@@ -61,23 +61,38 @@ export default function SignUpPage() {
 
   async function onSubmit(values: z.infer<typeof formSchema>) {
     setIsLoading(true);
-
+    
+    // Log the values to ensure they're correct
+    console.log('Form values:', values);
+    
     try {
+      const requestData = {
+        name: values.name,
+        email: values.email,
+        password: values.password,
+        confirmPassword: values.confirmPassword,
+        acceptTerms: values.acceptTerms
+      };
+      
+      console.log('Request data:', requestData);
+      
       // Call the backend API for signup
       const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/auth/signup`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify(values),
+        body: JSON.stringify(requestData),
         credentials: 'include',
       });
 
+      // Get error details for debugging
       if (!response.ok) {
         const errorData = await response.json();
+        console.error('Signup error details:', errorData);
         throw new Error(errorData.detail || 'Sign up failed');
       }
-
+      
       const data = await response.json();
       
       // Store the token in localStorage
@@ -94,7 +109,7 @@ export default function SignUpPage() {
         router.push("/dashboard");
       }, 1000);
     } catch (error) {
-      console.error(error);
+      console.error('Error details:', error);
       
       // Show an error toast notification
       const errorMessage = error instanceof Error 
@@ -163,7 +178,7 @@ export default function SignUpPage() {
                         <Input 
                           placeholder="John Doe" 
                           {...field} 
-                          className="bg-white/10 border-white/20 text-white placeholder-gray-300 focus:border-white focus-visible:ring-white/30"
+                          className="bg-gradient-to-r from-[#D9B846] via-[#E9D076] to-[#D9B846] border-white/20 text-gray-800 placeholder-gray-600 focus:border-white focus-visible:ring-white/30"
                         />
                       </FormControl>
                       <FormMessage className="text-yellow-200" />
@@ -180,7 +195,7 @@ export default function SignUpPage() {
                         <Input 
                           placeholder="email@example.com" 
                           {...field} 
-                          className="bg-white/10 border-white/20 text-white placeholder-gray-300 focus:border-white focus-visible:ring-white/30"
+                          className="bg-gradient-to-r from-[#D9B846] via-[#E9D076] to-[#D9B846] border-white/20 text-gray-800 placeholder-gray-600 focus:border-white focus-visible:ring-white/30"
                         />
                       </FormControl>
                       <FormMessage className="text-yellow-200" />
@@ -198,7 +213,7 @@ export default function SignUpPage() {
                           type="password" 
                           placeholder="••••••••" 
                           {...field} 
-                          className="bg-white/10 border-white/20 text-white placeholder-gray-300 focus:border-white focus-visible:ring-white/30"
+                          className="bg-gradient-to-r from-[#D9B846] via-[#E9D076] to-[#D9B846] border-white/20 text-gray-800 placeholder-gray-600 focus:border-white focus-visible:ring-white/30"
                         />
                       </FormControl>
                       <FormMessage className="text-yellow-200" />
@@ -216,7 +231,7 @@ export default function SignUpPage() {
                           type="password" 
                           placeholder="••••••••" 
                           {...field} 
-                          className="bg-white/10 border-white/20 text-white placeholder-gray-300 focus:border-white focus-visible:ring-white/30"
+                          className="bg-gradient-to-r from-[#D9B846] via-[#E9D076] to-[#D9B846] border-white/20 text-gray-800 placeholder-gray-600 focus:border-white focus-visible:ring-white/30"
                         />
                       </FormControl>
                       <FormMessage className="text-yellow-200" />
@@ -246,7 +261,7 @@ export default function SignUpPage() {
                 />
                 <Button 
                   type="submit" 
-                  className="w-full bg-white/20 text-white hover:bg-white/30 border border-white/40" 
+                  className="w-full bg-gradient-to-r from-[#D9B846] via-[#E9D076] to-[#D9B846] text-gray-800 hover:bg-gradient-to-r hover:from-[#C9A836] hover:via-[#D9C066] hover:to-[#C9A836] border border-white/10" 
                   disabled={isLoading}
                 >
                   {isLoading ? "Creating account..." : "Create account"}
@@ -268,7 +283,7 @@ export default function SignUpPage() {
                 <button
                   type="button"
                   onClick={() => handleOAuthSignUp('google')}
-                  className="w-full inline-flex justify-center items-center px-4 py-2 border border-white/20 rounded-md shadow-sm bg-white/10 text-sm font-medium text-white hover:bg-white/20 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-white/30 focus:ring-offset-gray-900"
+                  className="w-full inline-flex justify-center items-center px-4 py-2 border border-white/20 rounded-md shadow-sm bg-gradient-to-r from-[#D9B846] via-[#E9D076] to-[#D9B846] text-gray-800 font-medium hover:bg-gradient-to-r hover:from-[#C9A836] hover:via-[#D9C066] hover:to-[#C9A836] focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#D9B846] focus:ring-offset-gray-900"
                   disabled={isLoading}
                 >
                   <svg className="h-5 w-5 mr-2" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -283,7 +298,7 @@ export default function SignUpPage() {
                 <button
                   type="button"
                   onClick={() => handleOAuthSignUp('apple')}
-                  className="w-full inline-flex justify-center items-center px-4 py-2 border border-white/20 rounded-md shadow-sm bg-white/10 text-sm font-medium text-white hover:bg-white/20 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-white/30 focus:ring-offset-gray-900"
+                  className="w-full inline-flex justify-center items-center px-4 py-2 border border-white/20 rounded-md shadow-sm bg-gradient-to-r from-[#D9B846] via-[#E9D076] to-[#D9B846] text-gray-800 font-medium hover:bg-gradient-to-r hover:from-[#C9A836] hover:via-[#D9C066] hover:to-[#C9A836] focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#D9B846] focus:ring-offset-gray-900"
                   disabled={isLoading}
                 >
                   <svg className="h-5 w-5 mr-2" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">

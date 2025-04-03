@@ -27,34 +27,31 @@ from app.database import get_db
 router = APIRouter()
 
 @router.post("/signup", response_model=Token, status_code=status.HTTP_201_CREATED)
-async def signup(user_data: UserCreate, db: Session = Depends(get_db)) -> Any:
-    """
-    Create new user
-    """
-    # Check if user already exists
-    existing_user = db.query(User).filter(User.email == user_data.email).first()
+def signup(user_create: UserCreate, db: Session = Depends(get_db)):
+    # Check if user exists
+    existing_user = db.query(User).filter(User.email == user_create.email).first()
     if existing_user:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Email already registered"
-        )
+        raise HTTPException(status_code=400, detail="Email already registered")
     
     # Create new user
-    hashed_password = get_password_hash(user_data.password)
+    hashed_password = get_password_hash(user_create.password)
+    
+    # Create user object but don't save confirmPassword
     new_user = User(
-        email=user_data.email,
-        name=user_data.name,
+        email=user_create.email,
+        name=user_create.name,
         hashed_password=hashed_password,
-        provider="email"
+        is_active=True,
     )
     
     db.add(new_user)
     db.commit()
     db.refresh(new_user)
     
-    # Generate access token
+    # Create access token
     access_token = create_access_token(data={"sub": new_user.id})
     
+    # Return token with user data
     return {
         "access_token": access_token,
         "token_type": "bearer",

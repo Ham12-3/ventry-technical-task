@@ -1,4 +1,4 @@
-from pydantic import BaseModel, EmailStr, Field, validator
+from pydantic import BaseModel, EmailStr, Field, field_validator
 from typing import Optional
 from datetime import datetime
 
@@ -7,15 +7,16 @@ class UserCreate(BaseModel):
     name: str
     email: EmailStr
     password: str = Field(..., min_length=8)
-    confirm_password: str
+    confirmPassword: str
+    acceptTerms: bool = True  # Add this field to match frontend
 
-    @validator("confirm_password")
-    def passwords_match(cls, v, values, **kwargs):
-        if "password" in values and v != values["password"]:
+    @field_validator("confirmPassword")
+    def passwords_match(cls, v, info):
+        if "password" in info.data and v != info.data["password"]:
             raise ValueError("Passwords don't match")
         return v
     
-    @validator("password")
+    @field_validator("password")
     def password_strength(cls, v):
         if not any(char.isupper() for char in v):
             raise ValueError("Password must contain at least one uppercase character")
