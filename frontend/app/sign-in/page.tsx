@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
@@ -8,6 +8,7 @@ import * as z from "zod";
 import Link from "next/link";
 import { toast, Toaster } from "sonner";
 import Image from "next/image";
+import Cookies from 'js-cookie';
 
 import { Button } from "@/components/ui/button";
 import {
@@ -25,6 +26,7 @@ import { Separator } from "@/components/ui/separator";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { Badge } from "@/components/ui/badge";
 import { Loader2, CheckCircle, Mail } from "lucide-react";
+import { setAuthToken } from '@/lib/auth';
 
 const formSchema = z.object({
   email: z.string().email({
@@ -57,20 +59,90 @@ export default function SignInPage() {
   const watchEmail = form.watch("email");
   const isEmailValid = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(watchEmail);
 
+  useEffect(() => {
+    console.log("API URL:", process.env.NEXT_PUBLIC_API_URL);
+  }, []);
+
+  useEffect(() => {
+    // Check for token in cookie right after component mounts
+    const cookies = document.cookie.split(';').map(c => c.trim());
+    const tokenCookie = cookies.find(cookie => cookie.startsWith('token='));
+    
+    if (tokenCookie) {
+      const token = tokenCookie.split('=')[1];
+      
+      // Check if we're on the sign-in page with a redirect parameter
+      const params = new URLSearchParams(window.location.search);
+      const redirectPath = params.get('redirect');
+      
+      // If token exists and there's a redirect path, go there
+      if (redirectPath) {
+        router.push(redirectPath);
+      }
+    }
+  }, [router]);
+
   async function onSubmit(values: z.infer<typeof formSchema>) {
     setIsLoading(true);
 
+    // Debug the full URL
+    const apiUrl = `${process.env.NEXT_PUBLIC_API_URL}/api/auth/login`;
+    console.log("Attempting to fetch from:", apiUrl);
+    console.log("With payload:", values);
+
     try {
-      // Here you would implement your authentication logic
-      console.log(values);
+      const response = await fetch(apiUrl, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept': 'application/json',
+          'Origin': window.location.origin,
+        },
+        body: JSON.stringify(values),
+        // Try without credentials initially to rule out CORS preflight issues
+        // credentials: 'include',
+        mode: 'cors',
+      });
+      
+      // Log response info
+      console.log("Response status:", response.status);
+      console.log("Response headers:", Object.fromEntries(response.headers.entries()));
+      
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.detail || 'Sign in failed');
+      }
+
+      const data = await response.json();
+
+      // Store token in both cookie and localStorage with matching expiration
+      const tokenExpDays = 1; // 1 day, matching backend's 1440 minutes
+
+      // Set cookie for server-side (middleware)
+      Cookies.set('token', data.access_token, {
+        expires: tokenExpDays,
+        path: '/',
+        secure: process.env.NODE_ENV === 'production',
+        sameSite: 'lax'
+      });
+
+      // Also store in localStorage for client-side
+      localStorage.setItem('token', data.access_token);
+      localStorage.setItem('user', JSON.stringify(data.user));
+
+      // For debugging
+      console.log("Token stored in cookies and localStorage");
       
       // Show a success toast notification
       toast.success("Successfully signed in", {
         description: "Redirecting to dashboard...",
         duration: 3000,
       });
+
+      // Set auth token
+      setAuthToken(data.access_token);
       
-      // Simulating a successful sign-in
+      // Redirect to dashboard
       setTimeout(() => {
         router.push("/dashboard");
       }, 1000);
@@ -79,26 +151,40 @@ export default function SignInPage() {
       
       // Show an error toast notification
       toast.error("Sign in failed", {
-        description: "Please check your credentials and try again",
+        description: error instanceof Error ? error.message : "Please check your credentials and try again",
       });
     } finally {
       setIsLoading(false);
     }
   }
 
-  const handleOAuthSignIn = (provider: string) => {
+  const handleOAuthSignIn = async (provider: string) => {
     setIsLoading(true);
-    // Here you would implement OAuth sign-in logic
-    console.log(`Signing in with ${provider}`);
     
-    // Show a loading toast notification
-    toast.loading(`Authenticating with ${provider}...`);
-    
-    // Simulating OAuth flow
-    setTimeout(() => {
-      toast.success(`${provider} authentication successful`);
-      router.push("/dashboard");
-    }, 1500);
+    try {
+      // Get the authorization URL
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/auth/${provider.toLowerCase()}`);
+      
+      if (!response.ok) {
+        throw new Error(`Failed to initialize ${provider} authentication`);
+      }
+      
+      const data = await response.json();
+      
+      // Show a loading toast notification
+      toast.loading(`Redirecting to ${provider} authentication...`);
+      
+      // Redirect the user to the authorization URL
+      window.location.href = data.authorization_url;
+    } catch (error) {
+      console.error(error);
+      
+      // Show an error toast notification
+      toast.error(`${provider} authentication failed`, {
+        description: "Could not initiate authentication flow",
+      });
+      setIsLoading(false);
+    }
   };
 
   const handleRequestCode = () => {
@@ -109,34 +195,47 @@ export default function SignInPage() {
       });
       
       // Show an error toast notification
-      toast.error("Invalid email address", {
-        description: "Please enter a valid email to request a code",
-      });
+      toast.error("Invalid email address. Please enter a valid email to request a code.");
       return;
     }
     
     setRequestingCode(true);
     
-    // Show a loading toast notification
-    const toastId = toast.loading("Sending access code to your email...");
-    
-    // Simulate sending code
-    setTimeout(() => {
-      setRequestingCode(false);
-      setCodeSent(true);
-      
-      // Update the toast to success
-      toast.success("Access code sent", {
-        id: toastId,
-        description: `Check ${watchEmail} for your exclusive access code`,
-        icon: <Mail className="w-4 h-4" />,
+    // Call the backend API
+    fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/auth/request-code`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ email: watchEmail }),
+    })
+      .then(response => {
+        if (!response.ok) {
+          return response.json().then(data => {
+            throw new Error(data.detail || 'Failed to send access code');
+          });
+        }
+        return response.json();
+      })
+      .then(data => {
+        setRequestingCode(false);
+        setCodeSent(true);
+        
+        // Show success toast
+        toast.success(`Access code sent! Check ${watchEmail} for your exclusive access code.`);
+        
+        // Auto-hide the success message after 5 seconds
+        setTimeout(() => {
+          setCodeSent(false);
+        }, 5000);
+      })
+      .catch(error => {
+        setRequestingCode(false);
+        
+        // Show an error toast notification
+        const errorMessage = error instanceof Error ? error.message : 'An unexpected error occurred';
+        toast.error(`Failed to send access code: ${errorMessage}`);
       });
-      
-      // Auto-hide the success message after 5 seconds
-      setTimeout(() => {
-        setCodeSent(false);
-      }, 5000);
-    }, 2000);
   };
 
   return (

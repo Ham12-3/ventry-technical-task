@@ -1,4 +1,3 @@
-
 "use client";
 
 import { useState } from "react";
@@ -7,6 +6,8 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import * as z from "zod";
 import Link from "next/link";
+import { ToastContainer, toast } from "react-toastify";
+import "react-toastify/dist/ReactToastify.css";
 
 import { Button } from "@/components/ui/button";
 import {
@@ -62,29 +63,74 @@ export default function SignUpPage() {
     setIsLoading(true);
 
     try {
-      // Here you would implement your registration logic
-      console.log(values);
+      // Call the backend API for signup
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/auth/signup`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(values),
+        credentials: 'include',
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.detail || 'Sign up failed');
+      }
+
+      const data = await response.json();
       
-      // Simulating a successful registration
+      // Store the token in localStorage
+      localStorage.setItem('token', data.access_token);
+      
+      // Store user data if needed
+      localStorage.setItem('user', JSON.stringify(data.user));
+      
+      // Show a success toast notification
+      toast.success("Account created successfully. Redirecting to dashboard...");
+      
+      // Redirect to dashboard
       setTimeout(() => {
         router.push("/dashboard");
       }, 1000);
     } catch (error) {
       console.error(error);
+      
+      // Show an error toast notification
+      const errorMessage = error instanceof Error 
+        ? error.message 
+        : "Please check your information and try again";
+      toast.error(`Sign up failed: ${errorMessage}`);
     } finally {
       setIsLoading(false);
     }
   }
 
-  const handleOAuthSignUp = (provider: string) => {
+  const handleOAuthSignUp = async (provider: string) => {
     setIsLoading(true);
-    // Here you would implement OAuth sign-up logic
-    console.log(`Signing up with ${provider}`);
     
-    // Simulating OAuth flow
-    setTimeout(() => {
-      router.push("/dashboard");
-    }, 1500);
+    try {
+      // Get the authorization URL - same endpoint for sign-in
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/auth/${provider.toLowerCase()}`);
+      
+      if (!response.ok) {
+        throw new Error(`Failed to initialize ${provider} authentication`);
+      }
+      
+      const data = await response.json();
+      
+      // Show a loading toast notification
+      toast.info(`Redirecting to ${provider} authentication...`);
+      
+      // Redirect the user to the authorization URL
+      window.location.href = data.authorization_url;
+    } catch (error) {
+      console.error(error);
+      
+      // Show an error toast notification
+      toast.error(`${provider} authentication failed. Could not initiate authentication flow.`);
+      setIsLoading(false);
+    }
   };
 
   return (
