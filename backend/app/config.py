@@ -38,8 +38,7 @@ APPLE_REDIRECT_URI = os.getenv("APPLE_REDIRECT_URI", "http://localhost:3000/api/
 # Database - Update this to your PostgreSQL URL
 # Example: postgresql://username:password@localhost/dbname
 SQLALCHEMY_DATABASE_URL = os.getenv(
-    "DATABASE_URL", 
-    "postgresql://postgres:password@localhost:5432/ventry"
+    "DATABASE_URL"
 )
 
 # CORS

@@ -5,6 +5,7 @@ export function middleware(request: NextRequest) {
   // Check if the path is protected
   const isProtectedPath = [
     '/dashboard',
+    '/'
     // Add other protected paths as needed
   ].some(path => request.nextUrl.pathname.startsWith(path));
   
@@ -28,6 +29,7 @@ export function middleware(request: NextRequest) {
 export const config = {
   matcher: [
     '/dashboard/:path*',
+    '/',  // Added homepage to the matcher
     // Add other protected paths as needed
   ],
 };
